@@ -4,4 +4,9 @@
 `define CMD55  {8'h77,8'h00,8'h00,8'h00,8'h00,8'hff};  //CMD55,no need CRC
 `define ACMD41 {8'h69,8'h40,8'h00,8'h00,8'h00,8'hff};  //CMD41,no need CRC
 
+//resp.
+`define DATA_R1_CMD0   {8'h01,8'hff,8'hff,8'hff,8'hff,8'hff}//[47:40]=8'h01
+`define DATA_R7_CMD8   {8'h7f,8'hff,8'hff,8'hf1,8'hff,8'hff}//[19:16]=4'h01
+`define DATA_R1_CMD55  {8'h01,8'hff,8'hff,8'hff,8'hff,8'hff}//[47:40]=8'h01
+`define DATA_R1_ACMD41 {8'h00,8'hff,8'hff,8'hff,8'hff,8'hff}//[47:40]=8'h00
 `define FPGA

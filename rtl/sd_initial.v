@@ -40,18 +40,25 @@ always@(posedge SD_CLK or negedge rst_n)begin
         en       <= 1'b0;
         rx_valid <= 1'b0;
         rx_cnt   <= 0;
-        rx       <= 0;
+        rx       <= '1;
     end
     else begin
-        rx[47:0] <= {rx[46:0],SD_DATAOUT};
-        if(!SD_DATAOUT&!en)begin
+        if(!SD_DATAIN)begin
+            rx <= '1;
+            en <= 1'b0;
+        end
+        else if(!SD_DATAOUT&!en)begin
+            rx[47:0] <= {rx[46:0],SD_DATAOUT};
             rx_valid <= 1'b0;
             en       <= 1'b1;
-            rx_cnt   <= 48;
+            rx_cnt   <= 47;
         end
         else if(en)begin
             rx_cnt   <= rx_cnt - |rx_cnt;
-            if(~|rx_cnt)begin
+            if(|rx_cnt)begin
+                rx[47:0] <= {rx[46:0],SD_DATAOUT};
+            end
+            else begin
                 rx_valid <= 1'b1;
                 en       <= 1'b0;
             end
@@ -142,7 +149,7 @@ always@(*)begin
             end
             else begin
                 next_SD_CS     = 1'b0;
-                next_SD_DATAIN = 1'b0;
+                next_SD_DATAIN = 1'b1;
             end
         end
         waitb:begin//dummy
@@ -165,7 +172,7 @@ always@(*)begin
             end
             else begin
                 next_state     = waita;
-                next_SD_DATAIN = waita;
+                next_SD_DATAIN = 1'b1;
             end
         end
         waita:begin//cmd8 resp. SD2.0,support 2.7-3.6V supply
@@ -190,7 +197,7 @@ always@(*)begin
             if(|tx_cnt)begin
                 next_SD_DATAIN = data[tx_cnt-1];
                 next_state     = send_cmd55;
-                next_cnt       = 127;
+                next_cnt       = tx_cnt==1 ? 127 : cnt;
             end
             else if(|cnt)begin
                next_SD_DATAIN  = 1'b1;
@@ -198,6 +205,7 @@ always@(*)begin
                    next_state  = send_acmd41;
                    next_data   = `ACMD41;
                    next_tx_cnt = 48;
+                   next_cnt    = 0;
                end
                else begin
                    next_state = send_cmd55;
@@ -210,9 +218,9 @@ always@(*)begin
         send_acmd41:begin
             next_SD_CS = 1'b0;
             if(|tx_cnt)begin
-                next_SD_DATAIN = data[cnt-1];
+                next_SD_DATAIN = data[tx_cnt-1];
                 next_state     = send_acmd41;
-                next_cnt       = 127;
+                next_cnt       = tx_cnt==1 ? 127 : cnt;
             end
             else if(|cnt)begin
                 next_SD_DATAIN = 1'b1;
