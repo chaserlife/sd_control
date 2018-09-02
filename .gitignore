@@ -1,0 +1,7 @@
+*.log
+*.simv
+*/csrc
+*/simv.daidir
+*/ucli.key
+*/vcdplus.vpd
+*.swp

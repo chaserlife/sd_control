@@ -1,0 +1,3 @@
+#!/bin/sh
+vcs -f ../file +vcs+vcdpluson -debug_all -sverilog
+./simv
