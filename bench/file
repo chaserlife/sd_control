@@ -1,0 +1,8 @@
+../tb.v
++incdir+../../design/rtl
++incdir+../../design/bhv
+../../design/rtl/define.v
+../../design/rtl/sd_top.v
+../../design/rtl/sd_initial.v
+#../../design/rtl/sd_read.v
+../../design/bhv/SD.v

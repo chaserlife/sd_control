@@ -2,7 +2,6 @@ module SD(
     input      rst_n,
     input      SD_CLK,
     input      SD_IN,
-    input[3:0] state_r,
     output     SD_OUT
     );
     reg       SD_OUT,next_SD_OUT;
@@ -24,6 +23,7 @@ parameter send_acmd41 =4'b0111; //send acmd41
 parameter init_done   =4'b1000; //initial done
 parameter init_fail   =4'b1001; //initial fail
 parameter dummy       =4'b1010; //dummy
+wire[5:0] state_r = tb.DUT.sd_initial.state;
     always@(negedge SD_CLK or negedge rst_n)begin
         if(!rst_n)begin
             SD_OUT <= 1'b1;

@@ -19,16 +19,15 @@ module tb;
     SD_TOP DUT(
          .clk       (clk        )
         ,.rst_n     (rst_n      )
-        ,.SD_CLK    (SD_CLK     )
-        ,.SD_DATAIN (SD_DATAIN  )
-        ,.SD_DATAOUT(SD_DATAOUT )
+        ,.SD_CK     (SD_CK      )
+        ,.SD_MOSI   (SD_MOSI    )
+        ,.SD_MISO   (SD_MISO    )
     );
 
     SD SD(
-         .rst_n(rst_n)
-        ,.SD_CLK(SD_CLK)
-        ,.SD_IN (SD_DATAIN  )
-        ,.SD_OUT(SD_DATAOUT )
-        ,.state_r(state)
+         .rst_n(rst_n   )
+        ,.SD_CLK(SD_CK  )
+        ,.SD_IN (SD_MOSI)
+        ,.SD_OUT(SD_MISO)
     );
 endmodule

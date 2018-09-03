@@ -1,7 +1,0 @@
-../tb.v
-+incdir+../rtl
-+incdir+../bhv
-../rtl/define.v
-../rtl/sd_top.v
-../rtl/sd_initial.v
-../bhv/SD.v

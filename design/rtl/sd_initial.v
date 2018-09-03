@@ -3,14 +3,14 @@
 //to initial SD Card
 module sd_initial(
     input           rst_n,
-    input           SD_CLK,
-    input           SD_DATAOUT,
+    input           SD_CK,
+    input           SD_MOSI,
 
-    output reg      SD_CS,
-    output reg      SD_DATAIN,
-    output reg      init_o,
-    output reg[3:0] state,
-    output reg[47:0] rx
+    output          SD_CSn,
+    output          SD_MISO
+    //output reg      init_o,
+    //output reg[3:0] state,
+    //output reg[47:0] rx
 );
 
 `ifdef FPGA
@@ -33,9 +33,17 @@ parameter dummy       =4'b1010; //dummy
 reg      en;//enalbe signal to start receive data
 reg[5:0] rx_cnt;//rx counter for reveive 48 data
 reg      rx_valid;
-//reg[47:0]rx;
+reg[47:0]rx;
 
-always@(posedge SD_CLK or negedge rst_n)begin
+reg[5:0] state,next_state;
+reg      init_o,next_init_o;
+reg      SD_DATAIN,next_SD_DATAIN;
+reg      SD_CS,next_SD_CS;
+reg[5:0] tx_cnt,next_tx_cnt;
+reg[47:0]data,next_data;
+reg[9:0] cnt,next_cnt;
+wire     SD_DATAOUT;
+always@(posedge SD_CK or negedge rst_n)begin
     if(!rst_n)begin
         en       <= 1'b0;
         rx_valid <= 1'b0;
@@ -69,14 +77,7 @@ always@(posedge SD_CLK or negedge rst_n)begin
     end
 end
 
-reg[5:0] state,next_state;
-reg      init_o,next_init_o;
-reg      SD_DATAIN,next_SD_DATAIN;
-reg      SD_CS,next_SD_CS;
-reg[5:0] tx_cnt,next_tx_cnt;
-reg[47:0]data,next_data;
-reg[9:0] cnt,next_cnt;
-always@(posedge SD_CLK or negedge rst_n)begin
+always@(posedge SD_CK or negedge rst_n)begin
     if(!rst_n)begin
         state     <= idle;
         init_o    <= 1'b0;
@@ -107,14 +108,14 @@ always@(*)begin
     case(state)
         idle:begin
             next_cnt       = 1023;
-            next_SD_CS     = 1'b0;
+            next_SD_CS     = 1'b1;
             next_SD_DATAIN = 1'b1;
             next_init_o    = 1'b0;
             next_state     = dummy;
         end
         dummy:begin
             if(|cnt)begin
-                next_SD_CS = cnt==512 ? 1'b1 : SD_CS;
+                next_state = dummy;
             end
             else begin
                 next_SD_CS  = 1'b1;
@@ -254,4 +255,7 @@ always@(*)begin
         end
     endcase
 end
+assign SD_DATAOUT = SD_MISO;
+assign SD_MOSI    = SD_DATAIN;
+assign SD_CSn     = SD_CS;
 endmodule
