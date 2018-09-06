@@ -2,7 +2,7 @@ module sd_read(
     input      rst_n,
     input      SD_CK,
     input      SD_MISO,
-    output     SD_MOSI
+    output     SD_MOSI,
     output     SD_CSn,
     input      init_o,
     input      read_seq
@@ -12,9 +12,9 @@ reg[7:0] rx;
 reg[3:0] rx_cnt;
 reg      rx_valid;
 reg      en;
+reg SD_DATAIN,next_SD_DATAIN;
 assign SD_MOSI    = SD_DATAIN;
 assign SD_DATAOUT = SD_MISO;
-
 always@(posedge SD_CK or negedge rst_n)begin
     if(!rst_n)begin
         rx <= 0;
@@ -48,6 +48,15 @@ end
 reg[47:0] data,next_data;
 reg[5:0]  state,next_state;
 reg[9:0]  cnt,next_cnt;
+parameter idle          = 6'h00;
+parameter read_cmd      = 6'h01;
+parameter read_cmd_resp = 6'h02;
+parameter dummy         = 6'h03;
+parameter read_start    = 6'h04;
+parameter read          = 6'h05;
+parameter read_done     = 6'h06;
+reg[5:0] tx_cnt,next_tx_cnt;
+reg      SD_CS,next_SD_CS;
 always@(negedge SD_CK or negedge rst_n)begin
     if(!rst_n)begin
         state  <= idle;
@@ -74,7 +83,7 @@ always@(*)begin
             if(!init_o)begin
                 next_state = state;
             end
-            else if(read_req)begin
+            else if(read_seq)begin
                 next_state  = read_cmd;
                 next_data   = `CMD17;
                 next_tx_cnt = 48;
@@ -88,8 +97,8 @@ always@(*)begin
             end
             else begin
                 next_SD_DATAIN = 1'b1;
-                next_state     = read_cmd_resp;
-                next_cnt        = 128;
+                next_state     = read_done;//read_cmd_resp;
+                next_cnt       = 128;
             end
         end
         read_cmd_resp:begin
@@ -104,7 +113,7 @@ always@(*)begin
             end
             else begin//overtime
                 next_state = idle;
-                next_CS    = 1'b1;
+                next_SD_CS = 1'b1;
             end
         end
         dummy:begin
@@ -118,7 +127,7 @@ always@(*)begin
                 next_SD_DATAIN = data[tx_cnt-1];
             end
             else begin
-                next_rx_cnt = 512+16;
+                next_cnt = 512+16;
             end
         end
         read:begin//read and check crc
@@ -130,8 +139,9 @@ always@(*)begin
             end
         end
         read_done:begin
-            next_state = idle;
+            //next_state = idle;
         end
      endcase
 end
+assign SD_CSn     = SD_CS;
 endmodule
