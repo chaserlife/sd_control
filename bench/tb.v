@@ -8,7 +8,7 @@ module tb;
         end
     end
     initial begin
-        #1ms;
+        #10ms;
         $finish;
     end
     reg rst_n;

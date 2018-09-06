@@ -185,16 +185,17 @@ always@(*)begin
                 else begin
                     next_state = init_fail;
                 end
+                next_SD_CS = 1'b1;
             end
             else begin
-                next_SD_CS     = 1'b1;
+                next_SD_CS     = 1'b0;
                 next_SD_DATAIN = 1'b1;
                 next_state     = waita;
             end
         end
         send_cmd55:begin
-            next_SD_CS = 1'b0;
             if(|tx_cnt)begin
+                next_SD_CS = 1'b0;
                 next_SD_DATAIN = data[tx_cnt-1];
                 next_state     = send_cmd55;
                 next_cnt       = tx_cnt==1 ? 127 : cnt;
@@ -212,17 +213,19 @@ always@(*)begin
                end
             end
             else begin
+                next_SD_CS = 1'b1;
                 next_state = init_fail;
             end
         end
         send_acmd41:begin
-            next_SD_CS = 1'b0;
             if(|tx_cnt)begin
+                next_SD_CS = 1'b0;
                 next_SD_DATAIN = data[tx_cnt-1];
                 next_state     = send_acmd41;
                 next_cnt       = tx_cnt==1 ? 127 : cnt;
             end
             else if(|cnt)begin
+                next_SD_CS = 1'b1;
                 next_SD_DATAIN = 1'b1;
                 if(rx_valid&rx[47:40]==8'h00)begin
                     next_state = init_done;
@@ -232,6 +235,7 @@ always@(*)begin
                 end
             end
             else begin
+                next_SD_CS = 1'b1;
                 next_state = init_fail;
             end
         end
