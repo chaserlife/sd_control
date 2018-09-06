@@ -97,7 +97,7 @@ always@(*)begin
             end
             else begin
                 next_SD_DATAIN = 1'b1;
-                next_state     = read_done;//read_cmd_resp;
+                next_state     = read_cmd_resp;
                 next_cnt       = 128;
             end
         end

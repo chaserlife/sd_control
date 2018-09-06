@@ -58,6 +58,7 @@ sd_initial sd_initial(
 sd_read sd_read(
      .rst_n      (rst_n         )
     ,.SD_MISO    (SD_MISO       )
+    ,.SD_CK     (SD_CK          )
     ,.SD_MOSI    (SD_MOSI_read  )
     ,.SD_CSn     (SD_CSn_read   )
     ,.init_o     (init_o        )
