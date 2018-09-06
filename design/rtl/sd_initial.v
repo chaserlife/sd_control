@@ -4,10 +4,9 @@
 module sd_initial(
     input           rst_n,
     input           SD_CK,
-    input           SD_MOSI,
-
+    input           SD_MISO
+    output          SD_MOSI,
     output          SD_CSn,
-    output          SD_MISO
     //output reg      init_o,
     //output reg[3:0] state,
     //output reg[47:0] rx
@@ -48,11 +47,11 @@ always@(posedge SD_CK or negedge rst_n)begin
         en       <= 1'b0;
         rx_valid <= 1'b0;
         rx_cnt   <= 0;
-        rx       <= '1;
+        rx       <= 48'hff_ff_ff_ff_ff_ff;
     end
     else begin
         if(!SD_DATAIN)begin
-            rx <= '1;
+            rx <= 48'hff_ff_ff_ff_ff_ff;
             en <= 1'b0;
         end
         else if(!SD_DATAOUT&!en)begin
@@ -188,7 +187,7 @@ always@(*)begin
                 end
             end
             else begin
-                next_SD_CS     = 1'b0;
+                next_SD_CS     = 1'b1;
                 next_SD_DATAIN = 1'b1;
                 next_state     = waita;
             end

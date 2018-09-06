@@ -23,7 +23,9 @@ parameter send_acmd41 =4'b0111; //send acmd41
 parameter init_done   =4'b1000; //initial done
 parameter init_fail   =4'b1001; //initial fail
 parameter dummy       =4'b1010; //dummy
+parameter wait_st     =4'b1011; //wait_some time
 wire[5:0] state_r = tb.DUT.sd_initial.state;
+reg[7:0]  cnt,next_cnt;
     always@(negedge SD_CLK or negedge rst_n)begin
         if(!rst_n)begin
             SD_OUT <= 1'b1;
@@ -31,6 +33,7 @@ wire[5:0] state_r = tb.DUT.sd_initial.state;
             state  <= idle;
             cmp    <= 0;
             data   <= 0;
+            cnt    <= 0;
         end
         else begin
             SD_OUT <= next_SD_OUT;
@@ -38,6 +41,7 @@ wire[5:0] state_r = tb.DUT.sd_initial.state;
             state  <= next_state;
             cmp    <= next_cmp;
             data   <= next_data;
+            cnt    <= next_cnt;
         end
     end
     always@(*)begin
@@ -45,14 +49,16 @@ wire[5:0] state_r = tb.DUT.sd_initial.state;
         next_tx_cnt = tx_cnt - |tx_cnt;
         next_cmp    = cmp;
         next_data   = data;
+        next_cnt    = cnt - |cnt;
         case(state)
             idle:begin
                 if(state_r==4'b0010)begin
-                    next_state  = send_cmd0_r;
+                    next_state  = wait_st;
                     next_tx_cnt = 48;
                     next_data   = `DATA_R1_CMD0;
                     next_cmp    = state_r;
                     next_SD_OUT = 1;
+                    next_cnt    = 8;
                 end
                 else if(state_r==waita)begin
                     next_state  = send_cmd0_r;
@@ -77,6 +83,15 @@ wire[5:0] state_r = tb.DUT.sd_initial.state;
                 end
                 else begin
                     next_state = idle;
+                end
+            end
+            wait_st:begin
+                if(|cnt)begin
+                    next_state = wait_st;
+                end
+                else begin
+                    next_tx_cnt = 48;
+                    next_state  = send_cmd0_r;
                 end
             end
             send_cmd0_r:begin

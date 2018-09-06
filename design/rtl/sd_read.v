@@ -1,16 +1,21 @@
 module sd_read(
     input      rst_n,
-    input      SD_DATAOUT,
-    input      SD_CLK,
-
-    output reg SD_DATAIN
+    input      SD_CK,
+    input      SD_MISO,
+    output     SD_MOSI
+    output     SD_CSn,
+    input      init_o,
+    input      read_seq
 );
 
 reg[7:0] rx;
 reg[3:0] rx_cnt;
 reg      rx_valid;
 reg      en;
-always@(posedge SD_CLK or negedge rst_n)begin
+assign SD_MOSI    = SD_DATAIN;
+assign SD_DATAOUT = SD_MISO;
+
+always@(posedge SD_CK or negedge rst_n)begin
     if(!rst_n)begin
         rx <= 0;
     end
@@ -18,7 +23,7 @@ always@(posedge SD_CLK or negedge rst_n)begin
         rx <= {rx[6:0],SD_DATAOUT};
     end
 end
-always@(posedge SD_CLK or negedge rst_n)begin
+always@(posedge SD_CK or negedge rst_n)begin
     if(!rst_n)begin
         en     <= 1'b1;
         rx_cnt <= 0;
@@ -43,7 +48,7 @@ end
 reg[47:0] data,next_data;
 reg[5:0]  state,next_state;
 reg[9:0]  cnt,next_cnt;
-always@(negedge SD_CLK or negedge rst_n)begin
+always@(negedge SD_CK or negedge rst_n)begin
     if(!rst_n)begin
         state  <= idle;
         data   <= 0;
@@ -66,7 +71,7 @@ always@(*)begin
         idle:begin
             SD_CS     = 1'b1;
             SD_DATAIN = 1'b1;
-            if(!init)begin
+            if(!init_o)begin
                 next_state = state;
             end
             else if(read_req)begin
