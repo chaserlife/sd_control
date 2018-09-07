@@ -201,16 +201,17 @@ always@(*)begin
                 next_cnt       = tx_cnt==1 ? 127 : cnt;
             end
             else if(|cnt)begin
-               next_SD_CS = 1'b0;
                next_SD_DATAIN  = 1'b1;
                if(rx_valid&rx[47:40]==8'h01)begin//CMD55 resp.
                    next_state  = send_acmd41;
                    next_data   = `ACMD41;
                    next_tx_cnt = 48;
                    next_cnt    = 0;
+                   next_SD_CS = 1'b1;
                end
                else begin
                    next_state = send_cmd55;
+                   next_SD_CS = 1'b0;
                end
             end
             else begin
