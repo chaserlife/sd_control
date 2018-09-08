@@ -5,7 +5,8 @@ module sd_write(
     output     SD_MOSI,
     output     SD_CSn,
     input      init_o,
-    input      write_seq
+    input      write_seq,
+    output     ok
 );
 parameter idle        = 0;
 parameter write_cmd   = 1;
@@ -19,12 +20,13 @@ reg[512+8+16-1:0] data,next_data;
 reg[10:0]         cnt,next_cnt;
 reg               SD_CS,next_SD_CS;
 reg[47:0]         rx;
-reg[3:0]          rx_cnt;
+reg[7:0]          rx_cnt;
 reg               rx_valid;
 reg               en;
 reg SD_DATAIN,next_SD_DATAIN;
 assign SD_MOSI    = SD_DATAIN;
 assign SD_DATAOUT = SD_MISO;
+reg write_ok,next_write_ok;
 always@(negedge SD_CK or negedge rst_n)begin
     if(!rst_n)begin
         state     <= 0;
@@ -33,6 +35,7 @@ always@(negedge SD_CK or negedge rst_n)begin
         tx_cnt    <= 0;
         cnt       <= 0;
         data      <= 0;
+        write_ok  <= 0;
     end
     else begin
         state     <= next_state;
@@ -41,6 +44,7 @@ always@(negedge SD_CK or negedge rst_n)begin
         tx_cnt    <= next_tx_cnt;
         cnt       <= next_cnt;
         data      <= next_data;
+        write_ok  <= next_write_ok;
     end
 end
 always@(*)begin
@@ -50,6 +54,7 @@ always@(*)begin
     next_tx_cnt    = tx_cnt-|tx_cnt;
     next_cnt       = cnt-|cnt;
     next_data      = data;
+    next_write_ok  = write_ok;
     case(state)
         idle:begin
             next_SD_CS     = 1'b1;
@@ -90,18 +95,23 @@ always@(*)begin
             end
             else begin
                 next_state     = write_dummy;
-                next_cnt       = 16;
-                next_SD_CS     = 1'b1;
+                next_cnt       = 1024;
+                next_SD_CS     = 1'b0;
                 next_SD_DATAIN = 1'b1;
             end
         end
         write_dummy:begin
-            if(~|cnt) next_state = write_done;
+            if(~|cnt)begin
+                next_state = write_done;
+                next_SD_CS = 1'b1;
+            end
         end
         write_done:begin
+            next_write_ok = 1'b1;
         end
     endcase
 end
+assign ok = write_ok;
 always@(posedge SD_CK or negedge rst_n)begin
     if(!rst_n)begin
         rx <= 0;
