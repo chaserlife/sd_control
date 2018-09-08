@@ -5,7 +5,8 @@ module sd_read(
     output     SD_MOSI,
     output     SD_CSn,
     input      init_o,
-    input      read_seq
+    input      read_seq,
+    output     ok
 );
 
 reg[7:0] rx;
@@ -57,6 +58,7 @@ parameter read          = 6'h05;
 parameter read_done     = 6'h06;
 reg[5:0] tx_cnt,next_tx_cnt;
 reg      SD_CS,next_SD_CS;
+reg      read_ok,next_read_ok;
 always@(negedge SD_CK or negedge rst_n)begin
     if(!rst_n)begin
         state     <= idle;
@@ -65,6 +67,7 @@ always@(negedge SD_CK or negedge rst_n)begin
         cnt       <= 0;
         SD_CS     <= 0;
         SD_DATAIN <= 1'b0;
+        read_ok   <= 1'b0;
     end
     else begin
         state      <= next_state;
@@ -73,6 +76,7 @@ always@(negedge SD_CK or negedge rst_n)begin
         cnt        <= next_cnt;
         SD_CS      <= next_SD_CS;
         SD_DATAIN  <= next_SD_DATAIN;
+        read_ok    <= next_read_ok;
     end
 end
 always@(*)begin
@@ -82,6 +86,7 @@ always@(*)begin
     next_cnt       = cnt - |cnt;
     next_SD_CS     = SD_CS;
     next_SD_DATAIN = SD_DATAIN;
+    next_read_ok   = read_ok;
     case(state)
         idle:begin
             SD_CS     = 1'b1;
@@ -152,9 +157,10 @@ always@(*)begin
             end
         end
         read_done:begin
-            //next_state = idle;
+            next_read_ok = 1'b1;
         end
      endcase
 end
+assign ok         = read_ok;
 assign SD_CSn     = SD_CS;
 endmodule

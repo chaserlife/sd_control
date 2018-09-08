@@ -5,6 +5,7 @@
 `define ACMD41 {8'h69,8'h40,8'h00,8'h00,8'h00,8'hff}  //CMD41,no need CRC
 //`define CMD17  {8'h51,sec[31:24],sec[23:16],sec[15:8],sec[7:0],8'hff}//block read
 `define CMD17  {8'h51,8'h0,8'h0,8'h0,8'h0,8'hff}//block read
+`define CMD24  {8'h58,8'h0,8'h0,8'h0,8'h0,8'hff}//block write
 //resp.
 `define DATA_R1_CMD0   {8'h01,8'hff,8'hff,8'hff,8'hff,8'hff}//[47:40]=8'h01
 `define DATA_R7_CMD8   {8'h7f,8'hff,8'hff,8'hf1,8'hff,8'hff}//[19:16]=4'h01

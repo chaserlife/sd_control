@@ -63,8 +63,18 @@ sd_read sd_read(
     ,.SD_CSn     (SD_CSn_read   )
     ,.init_o     (init_o        )
     ,.read_seq   (1'b1          )//TODO read_seq
+    ,.ok         (read_ok     )
 );
-assign SD_MOSI = SD_MOSI_init&SD_MOSI_read;
-assign SD_CSn  = SD_CSn_init&SD_CSn_read;
+sd_write sd_write(
+     .rst_n      (rst_n         )
+    ,.SD_MISO    (SD_MISO       )
+    ,.SD_CK     (SD_CK          )
+    ,.SD_MOSI    (SD_MOSI_write )
+    ,.SD_CSn     (SD_CSn_write  )
+    ,.init_o     (read_ok     )
+    ,.write_seq  (1'b1          )//TODO read_seq
+);
+assign SD_MOSI = SD_MOSI_init&SD_MOSI_read&SD_MOSI_write;
+assign SD_CSn  = SD_CSn_init &SD_CSn_read &SD_CSn_write;
 assign SD_CK   = SD_CLK3;
 endmodule

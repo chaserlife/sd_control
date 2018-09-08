@@ -5,4 +5,5 @@
 ../../design/rtl/sd_top.v
 ../../design/rtl/sd_initial.v
 ../../design/rtl/sd_read.v
+../../design/rtl/sd_write.v
 ../../design/bhv/SD.v
