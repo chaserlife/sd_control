@@ -59,23 +59,29 @@ reg[5:0] tx_cnt,next_tx_cnt;
 reg      SD_CS,next_SD_CS;
 always@(negedge SD_CK or negedge rst_n)begin
     if(!rst_n)begin
-        state  <= idle;
-        data   <= 0;
-        tx_cnt <= 0;
-        cnt <= 0;
+        state     <= idle;
+        data      <= 0;
+        tx_cnt    <= 0;
+        cnt       <= 0;
+        SD_CS     <= 0;
+        SD_DATAIN <= 1'b0;
     end
     else begin
-        state  <= next_state;
-        tx_cnt <= next_tx_cnt;
-        data   <= next_data;
-        cnt    <= next_cnt;
+        state      <= next_state;
+        tx_cnt     <= next_tx_cnt;
+        data       <= next_data;
+        cnt        <= next_cnt;
+        SD_CS      <= next_SD_CS;
+        SD_DATAIN  <= next_SD_DATAIN;
     end
 end
 always@(*)begin
-    next_state  = state;
-    next_data   = data;
-    next_tx_cnt = tx_cnt - |tx_cnt;
-    next_cnt    = cnt - |cnt;
+    next_state     = state;
+    next_data      = data;
+    next_tx_cnt    = tx_cnt - |tx_cnt;
+    next_cnt       = cnt - |cnt;
+    next_SD_CS     = SD_CS;
+    next_SD_DATAIN = SD_DATAIN;
     case(state)
         idle:begin
             SD_CS     = 1'b1;
@@ -92,7 +98,7 @@ always@(*)begin
         read_cmd:begin
             next_SD_CS     = 1'b0;
             if(|tx_cnt)begin
-                next_state     = read;
+                next_state     = read_cmd;
                 next_SD_DATAIN = data[tx_cnt-1];
             end
             else begin
@@ -106,9 +112,11 @@ always@(*)begin
                 if(rx_valid&rx==8'h0)begin
                     next_state = dummy;
                     next_cnt   = 128;
+                    next_SD_CS = 1'b1;
                 end
                 else begin
                     next_state = read_cmd_resp;
+                    next_SD_CS = 1'b0;
                 end
             end
             else begin//overtime
@@ -120,21 +128,26 @@ always@(*)begin
             next_state  = |cnt ? dummy : read_start;
             next_tx_cnt = 8;
             next_data   = 8'hfe;
-            
+            next_SD_CS  = 1'b1;
         end
         read_start:begin
+            next_SD_CS     = 1'b0;
             if(|tx_cnt)begin
                 next_SD_DATAIN = data[tx_cnt-1];
+                next_state     = read_start;
             end
             else begin
-                next_cnt = 512+16;
+                next_cnt   = 512+16;
+                next_state = read;
             end
         end
         read:begin//read and check crc
             if(|cnt)begin
+                next_SD_CS = 1'b0;
                 next_state = read;
             end
             else begin
+                next_SD_CS = 1'b1;
                 next_state = read_done;
             end
         end

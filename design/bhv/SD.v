@@ -24,7 +24,9 @@ parameter init_done   =4'b1000; //initial done
 parameter init_fail   =4'b1001; //initial fail
 parameter dummy       =4'b1010; //dummy
 parameter wait_st     =4'b1011; //wait_some time
-wire[5:0] state_r = tb.DUT.sd_initial.state;
+reg seq,next_seq;
+wire[5:0] state_r = tb.DUT.init_o&tb.DUT.sd_read.read_seq ? tb.DUT.sd_read.state :
+                    tb.DUT.sd_initial.state;
 reg[7:0]  cnt,next_cnt;
     always@(negedge SD_CLK or negedge rst_n)begin
         if(!rst_n)begin
@@ -34,6 +36,7 @@ reg[7:0]  cnt,next_cnt;
             cmp    <= 0;
             data   <= 0;
             cnt    <= 0;
+            seq    <= 0;
         end
         else begin
             SD_OUT <= next_SD_OUT;
@@ -42,6 +45,7 @@ reg[7:0]  cnt,next_cnt;
             cmp    <= next_cmp;
             data   <= next_data;
             cnt    <= next_cnt;
+            seq    <= next_seq;
         end
     end
     always@(*)begin
@@ -50,39 +54,53 @@ reg[7:0]  cnt,next_cnt;
         next_cmp    = cmp;
         next_data   = data;
         next_cnt    = cnt - |cnt;
+        next_seq    = seq;
         case(state)
             idle:begin
-                if(state_r==4'b0010)begin
+                if(!tb.DUT.init_o&state_r==4'b0010)begin
                     next_state  = wait_st;
                     next_tx_cnt = 48;
                     next_data   = `DATA_R1_CMD0;
                     next_cmp    = state_r;
                     next_SD_OUT = 1;
                     next_cnt    = 8;
+                    next_seq    = 1;
                 end
-                else if(state_r==waita)begin
+                else if(!tb.DUT.init_o&state_r==waita)begin
                     next_state  = send_cmd0_r;
                     next_tx_cnt = 48;
                     next_data   = `DATA_R7_CMD8;
                     next_cmp    = state_r;
                     next_SD_OUT = 1;
+                    next_seq    = 1;
                 end
-                else if(state_r==send_cmd55&(|tb.DUT.sd_initial.cnt))begin
+                else if(!tb.DUT.init_o&state_r==send_cmd55&(|tb.DUT.sd_initial.cnt))begin
                     next_state  = send_cmd0_r;
                     next_tx_cnt = 48;
                     next_data   = `DATA_R1_CMD55;
                     next_cmp    = state_r;
                     next_SD_OUT = 1;                  
+                    next_seq    = 1;
                 end
-                else if(state_r==send_acmd41&(|tb.DUT.sd_initial.cnt))begin
+                else if(!tb.DUT.init_o&state_r==send_acmd41&(|tb.DUT.sd_initial.cnt))begin
                     next_state  = send_cmd0_r;
                     next_tx_cnt = 48;
                     next_data   = `DATA_R1_ACMD41;
                     next_cmp    = state_r;
                     next_SD_OUT = 1;                  
+                    next_seq    = 1;
+                end
+                else if(tb.DUT.init_o&tb.DUT.sd_read.read_seq&state_r==tb.DUT.sd_read.read_cmd_resp)begin
+                    next_state  = send_cmd0_r;
+                    next_tx_cnt = 48;
+                    next_data   = `DATA_R1_CMD17;
+                    next_cmp    = state_r;
+                    next_SD_OUT = 1;                  
+                    next_seq    = 2;
                 end
                 else begin
                     next_state = idle;
+                    next_seq    = 0;
                 end
             end
             wait_st:begin
@@ -104,8 +122,13 @@ reg[7:0]  cnt,next_cnt;
                 end
             end
             send_wait:begin
-                if(cmp!==state_r)begin
+                if(seq==1&cmp!==state_r)begin
                     next_state = idle;
+                    next_seq   = 0;
+                end
+                else if(seq==2&cmp!==state_r)begin
+                    next_state = idle;
+                    next_seq   = 0;
                 end
             end
         endcase
