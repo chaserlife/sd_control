@@ -89,8 +89,8 @@ always@(*)begin
     next_read_ok   = read_ok;
     case(state)
         idle:begin
-            SD_CS     = 1'b1;
-            SD_DATAIN = 1'b1;
+            next_SD_CS     = 1'b1;
+            next_SD_DATAIN = 1'b1;
             if(!init_o)begin
                 next_state = state;
             end
@@ -142,8 +142,9 @@ always@(*)begin
                 next_state     = read_start;
             end
             else begin
-                next_cnt   = 512+16;
-                next_state = read;
+                next_cnt       = 512+16;
+                next_SD_DATAIN = 1'b1;
+                next_state     = read;
             end
         end
         read:begin//read and check crc
@@ -152,8 +153,8 @@ always@(*)begin
                 next_state = read;
             end
             else begin
-                next_SD_CS = 1'b1;
-                next_state = read_done;
+                next_SD_CS     = 1'b1;
+                next_state     = read_done;
             end
         end
         read_done:begin

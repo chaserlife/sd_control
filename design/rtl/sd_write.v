@@ -18,7 +18,7 @@ reg[10:0]         tx_cnt,next_tx_cnt;
 reg[512+8+16-1:0] data,next_data;
 reg[10:0]         cnt,next_cnt;
 reg               SD_CS,next_SD_CS;
-reg[7:0]          rx;
+reg[47:0]         rx;
 reg[3:0]          rx_cnt;
 reg               rx_valid;
 reg               en;
@@ -69,7 +69,7 @@ always@(*)begin
                 next_SD_DATAIN = data[tx_cnt-1];
                 next_state     = write_cmd;
             end
-            else if(rx_valid)begin
+            else if(rx_valid&rx[47:40]==8'h0)begin
                 next_state     = wait_8clk;
                 next_cnt       = 8;
                 next_SD_DATAIN = 1'b1;
@@ -105,6 +105,9 @@ end
 always@(posedge SD_CK or negedge rst_n)begin
     if(!rst_n)begin
         rx <= 0;
+    end
+    else if(!SD_DATAIN)begin
+        rx <= 48'hff_ff_ff_ff_ff_ff;
     end
     else begin
         rx <= {rx[6:0],SD_DATAOUT};
