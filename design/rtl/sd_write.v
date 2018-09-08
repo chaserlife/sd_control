@@ -15,8 +15,8 @@ parameter write_data  = 3;
 parameter write_dummy = 4;
 parameter write_done  = 5;
 reg[5:0]          state,next_state;
-reg[10:0]         tx_cnt,next_tx_cnt;
-reg[512+8+16-1:0] data,next_data;
+reg[12:0]         tx_cnt,next_tx_cnt;
+reg[512*8+8+16-1:0] data,next_data;
 reg[10:0]         cnt,next_cnt;
 reg               SD_CS,next_SD_CS;
 reg[47:0]         rx;
@@ -84,8 +84,8 @@ always@(*)begin
         wait_8clk:begin
             if(~|cnt)begin
                 next_state  = write_data;
-                next_data   = {8'hfe,512'b0,16'hff_ff};
-                next_tx_cnt = 8+512+16;
+                next_data   = {8'hfe,8'haa,4088'haabbccddee,16'hff_ff};
+                next_tx_cnt = 8+512*8+16;
             end
         end
         write_data:begin
@@ -95,19 +95,21 @@ always@(*)begin
             end
             else begin
                 next_state     = write_dummy;
-                next_cnt       = 1024;
                 next_SD_CS     = 1'b0;
                 next_SD_DATAIN = 1'b1;
             end
         end
         write_dummy:begin
-            if(~|cnt)begin
+            if(rx[47:40]==8'he5)begin//8bit e5??
                 next_state = write_done;
-                next_SD_CS = 1'b1;
+                next_SD_CS = 1'b0;
             end
         end
         write_done:begin
-            next_write_ok = 1'b1;
+            if(rx[47:40]==8'hff)begin
+                next_write_ok = 1'b1;
+                next_SD_CS    = 1'b1;
+            end
         end
     endcase
 end
@@ -120,7 +122,7 @@ always@(posedge SD_CK or negedge rst_n)begin
         rx <= 48'hff_ff_ff_ff_ff_ff;
     end
     else begin
-        rx <= {rx[6:0],SD_DATAOUT};
+        rx <= {rx[46:0],SD_DATAOUT};
     end
 end
 always@(posedge SD_CK or negedge rst_n)begin

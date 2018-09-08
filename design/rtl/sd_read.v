@@ -26,8 +26,9 @@ always@(posedge SD_CK or negedge rst_n)begin
 end
 always@(posedge SD_CK or negedge rst_n)begin
     if(!rst_n)begin
-        en     <= 1'b1;
-        rx_cnt <= 0;
+        en       <= 1'b1;
+        rx_cnt   <= 0;
+        rx_valid <= 1'b0;
     end
     else if(!SD_DATAIN)begin
         rx_valid <= 1'b0;
@@ -48,7 +49,7 @@ always@(posedge SD_CK or negedge rst_n)begin
 end
 reg[47:0] data,next_data;
 reg[5:0]  state,next_state;
-reg[9:0]  cnt,next_cnt;
+reg[12:0]  cnt,next_cnt;
 parameter idle          = 6'h00;
 parameter read_cmd      = 6'h01;
 parameter read_cmd_resp = 6'h02;
@@ -97,27 +98,31 @@ always@(*)begin
             else if(read_seq)begin
                 next_state  = read_cmd;
                 next_data   = `CMD17;
-                next_tx_cnt = 48;
+                next_cnt    = 48;
             end
         end
         read_cmd:begin
-            next_SD_CS     = 1'b0;
-            if(|tx_cnt)begin
-                next_state     = read_cmd;
-                next_SD_DATAIN = data[tx_cnt-1];
+            if(|cnt)begin
+                next_tx_cnt = 48;
             end
             else begin
-                next_SD_DATAIN = 1'b1;
-                next_state     = read_cmd_resp;
-                next_cnt       = 128;
+                next_SD_CS     = 1'b0;
+                if(|tx_cnt)begin
+                    next_state     = read_cmd;
+                    next_SD_DATAIN = data[tx_cnt-1];
+                end
+                else begin
+                    next_SD_DATAIN = 1'b1;
+                    next_state     = read_cmd_resp;
+                    next_cnt       = 128;
+                end
             end
         end
         read_cmd_resp:begin
             if(|cnt)begin
                 if(rx_valid&rx==8'h0)begin
                     next_state = dummy;
-                    next_cnt   = 128;
-                    next_SD_CS = 1'b1;
+                    next_SD_CS = 1'b0;
                 end
                 else begin
                     next_state = read_cmd_resp;
@@ -130,21 +135,9 @@ always@(*)begin
             end
         end
         dummy:begin
-            next_state  = |cnt ? dummy : read_start;
-            next_tx_cnt = 8;
-            next_data   = 8'hfe;
-            next_SD_CS  = 1'b1;
-        end
-        read_start:begin
-            next_SD_CS     = 1'b0;
-            if(|tx_cnt)begin
-                next_SD_DATAIN = data[tx_cnt-1];
-                next_state     = read_start;
-            end
-            else begin
-                next_cnt       = 512+16;
-                next_SD_DATAIN = 1'b1;
-                next_state     = read;
+            if(rx==8'hfe)begin
+                next_state = read;
+                next_cnt   = 512*8+512-1;
             end
         end
         read:begin//read and check crc
@@ -153,11 +146,12 @@ always@(*)begin
                 next_state = read;
             end
             else begin
-                next_SD_CS     = 1'b1;
+                next_SD_CS     = 1'b0;
                 next_state     = read_done;
             end
         end
         read_done:begin
+            next_SD_CS = 1'b1;
             next_read_ok = 1'b1;
         end
      endcase
