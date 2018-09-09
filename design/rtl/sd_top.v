@@ -62,7 +62,7 @@ sd_read sd_read(
     ,.SD_MOSI    (SD_MOSI_read  )
     ,.SD_CSn     (SD_CSn_read   )
     ,.init_o     (init_o        )
-    ,.read_seq   (write_ok      )//TODO read_seq
+    ,.read_seq   (1'b1          )//TODO read_seq
     ,.ok         (read_ok     )
 );
 sd_write sd_write(
@@ -72,7 +72,7 @@ sd_write sd_write(
     ,.SD_MOSI    (SD_MOSI_write )
     ,.SD_CSn     (SD_CSn_write  )
     ,.init_o     (init_o        )
-    ,.write_seq  (1'b1          )//TODO read_seq
+    ,.write_seq  (read_ok       )//TODO read_seq
     ,.ok         (write_ok      )
 );
 assign SD_MOSI = SD_MOSI_init&SD_MOSI_read&SD_MOSI_write;

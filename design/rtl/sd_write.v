@@ -15,8 +15,8 @@ parameter write_data  = 3;
 parameter write_dummy = 4;
 parameter write_done  = 5;
 reg[5:0]          state,next_state;
-reg[10:0]         tx_cnt,next_tx_cnt;
 reg[48:0]         data,next_data;
+reg[12:0]         tx_cnt,next_tx_cnt;
 reg[10:0]         cnt,next_cnt;
 reg[9:0]          s_cnt,next_s_cnt;
 reg               SD_CS,next_SD_CS;
@@ -113,13 +113,16 @@ always@(*)begin
             end
         end
         write_dummy:begin
-            if(~|cnt)begin
+            if(rx[47:40]==8'he5)begin//8bit e5??
                 next_state = write_done;
-                next_SD_CS = 1'b1;
+                next_SD_CS = 1'b0;
             end
         end
         write_done:begin
-            next_write_ok = 1'b1;
+            if(rx[47:40]==8'hff)begin
+                next_write_ok = 1'b1;
+                next_SD_CS    = 1'b1;
+            end
         end
     endcase
 end
@@ -132,7 +135,7 @@ always@(posedge SD_CK or negedge rst_n)begin
         rx <= 48'hff_ff_ff_ff_ff_ff;
     end
     else begin
-        rx <= {rx[6:0],SD_DATAOUT};
+        rx <= {rx[46:0],SD_DATAOUT};
     end
 end
 always@(posedge SD_CK or negedge rst_n)begin

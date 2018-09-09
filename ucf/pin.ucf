@@ -1,0 +1,11 @@
+NET "clk"        LOC="p184";
+
+NET "rst_n"      LOC="p101";
+
+NET "SD_CSn"     LOC="p74";
+
+NET "SD_CK"      LOC="p69";
+
+NET "SD_MOSI"    LOC="p76";
+
+NET "SD_MISO"    LOC="p75";
