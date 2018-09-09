@@ -49,11 +49,7 @@ always@(posedge SD_CK or negedge rst_n)begin
 end
 reg[47:0] data,next_data;
 reg[5:0]  state,next_state;
-<<<<<<< HEAD
-reg[11:0]  cnt,next_cnt;
-=======
 reg[12:0]  cnt,next_cnt;
->>>>>>> 3dcca88c5f334ad285fc9d942f277907f245575d
 parameter idle          = 6'h00;
 parameter read_cmd      = 6'h01;
 parameter read_cmd_resp = 6'h02;
@@ -131,10 +127,7 @@ always@(*)begin
                 //if(rx_valid&rx==8'h0)begin
                 if(rx==8'h0)begin
                     next_state = dummy;
-<<<<<<< HEAD
                     next_cnt   = 2048;
-=======
->>>>>>> 3dcca88c5f334ad285fc9d942f277907f245575d
                     next_SD_CS = 1'b0;
                 end
                 else begin
@@ -148,7 +141,6 @@ always@(*)begin
             end
         end
         dummy:begin
-<<<<<<< HEAD
             if(|cnt)begin
                 if(rx==8'hfe)begin
                     next_state  = read;
@@ -162,11 +154,6 @@ always@(*)begin
             end
             else begin
                 next_state = idle;
-=======
-            if(rx==8'hfe)begin
-                next_state = read;
-                next_cnt   = 512*8+512-1;
->>>>>>> 3dcca88c5f334ad285fc9d942f277907f245575d
             end
         end
         read:begin//read and check crc

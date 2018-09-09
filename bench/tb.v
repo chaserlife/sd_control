@@ -15,7 +15,10 @@ module tb;
     initial begin
         `include "stimulus.v"
     end
-    wire[3:0] state = tb.DUT.sd_initial.state;
+    wire[3:0] state = !tb.DUT.init_o          ? tb.DUT.sd_initial.state :
+                      !tb.DUT.read_ok         ? tb.DUT.sd_read.state :
+                      !tb.DUT.write_ok        ? tb.DUT.sd_write.state :
+                      0;
     SD_TOP DUT(
          .clk       (clk        )
         ,.rst_n     (rst_n      )

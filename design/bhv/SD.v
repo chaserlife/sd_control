@@ -5,10 +5,10 @@ module SD(
     output     SD_OUT
     );
     reg       SD_OUT,next_SD_OUT;
-    reg[5:0]  tx_cnt,next_tx_cnt;
+    reg[9:0]  tx_cnt,next_tx_cnt;
     reg[5:0]  state,next_state;
     reg[5:0]  cmp,next_cmp;
-    reg[47:0] data,next_data;
+    reg[47+48:0] data,next_data;
     parameter idle        = 0;
     parameter send_cmd0_r = 1;
     parameter send_wait   = 2;
@@ -25,7 +25,8 @@ parameter init_fail   =4'b1001; //initial fail
 parameter dummy       =4'b1010; //dummy
 parameter wait_st     =4'b1011; //wait_some time
 reg[2:0] seq,next_seq;
-wire[5:0] state_r = tb.DUT.init_o&tb.DUT.sd_read.read_seq ? tb.DUT.sd_read.state :
+wire[5:0] state_r = tb.DUT.init_o&tb.DUT.sd_read.read_seq&!tb.DUT.sd_read.ok    ? tb.DUT.sd_read.state :
+                    tb.DUT.init_o&tb.DUT.sd_write.write_seq&!tb.DUT.sd_write.ok ? tb.DUT.sd_write.state :
                     tb.DUT.sd_initial.state;
 reg[7:0]  cnt,next_cnt;
     always@(negedge SD_CLK or negedge rst_n)begin
@@ -90,7 +91,7 @@ reg[7:0]  cnt,next_cnt;
                     next_SD_OUT = 1;                  
                     next_seq    = 1;
                 end
-                else if(tb.DUT.init_o&tb.DUT.sd_read.read_seq&state_r==tb.DUT.sd_read.read_cmd_resp)begin
+                else if(!tb.DUT.sd_read.ok&tb.DUT.init_o&tb.DUT.sd_read.read_seq&state_r==tb.DUT.sd_read.read_cmd_resp)begin
                     next_state  = send_cmd0_r;
                     next_tx_cnt = 48;
                     next_data   = `DATA_R1_CMD17;
@@ -98,7 +99,7 @@ reg[7:0]  cnt,next_cnt;
                     next_SD_OUT = 1;                  
                     next_seq    = 2;
                 end
-                else if(tb.DUT.init_o&tb.DUT.sd_read.read_seq&state_r==tb.DUT.sd_read.dummy)begin
+                else if(!tb.DUT.sd_read.ok&tb.DUT.init_o&tb.DUT.sd_read.read_seq&state_r==tb.DUT.sd_read.dummy)begin
                     next_state  = send_cmd0_r;
                     next_tx_cnt = 48;
                     next_data   = {8'hfe,8'h00};
@@ -106,6 +107,22 @@ reg[7:0]  cnt,next_cnt;
                     next_SD_OUT = 1;                  
                     next_seq    = 2;
                 end
+                else if(tb.DUT.init_o&tb.DUT.sd_write.write_seq&state_r==tb.DUT.sd_write.write_cmd)begin
+                    next_state  = send_cmd0_r;
+                    next_tx_cnt = 48+48;
+                    next_data   = {{48{1'b1}},{40{1'b1}},8'h00};
+                    next_cmp    = state_r;
+                    next_SD_OUT = 1;                  
+                    next_seq    = 3;
+                end
+                //else if(tb.DUT.init_o&tb.DUT.sd_write.write_seq&state_r==tb.DUT.sd_write.write_dummy)begin
+                //    next_state  = send_cmd0_r;
+                //    next_tx_cnt = 48;
+                //    next_data   = 8'h00;
+                //    next_cmp    = state_r;
+                //    next_SD_OUT = 1;                  
+                //    next_seq    = 3;
+                //end
                 else begin
                     next_state = idle;
                     next_seq    = 0;
@@ -125,8 +142,8 @@ reg[7:0]  cnt,next_cnt;
                     next_SD_OUT = data[tx_cnt-1];
                 end
                 else begin
-                    SD_OUT     = 1'b1;
-                    next_state = send_wait;
+                    next_SD_OUT = 1'b1;
+                    next_state  = send_wait;
                 end
             end
             send_wait:begin
@@ -135,6 +152,10 @@ reg[7:0]  cnt,next_cnt;
                     next_seq   = 0;
                 end
                 else if(seq==2&cmp!==state_r)begin
+                    next_state = idle;
+                    next_seq   = 0;
+                end
+                else if(seq==3&cmp!==state_r)begin
                     next_state = idle;
                     next_seq   = 0;
                 end
