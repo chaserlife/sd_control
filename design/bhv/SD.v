@@ -24,7 +24,7 @@ parameter init_done   =4'b1000; //initial done
 parameter init_fail   =4'b1001; //initial fail
 parameter dummy       =4'b1010; //dummy
 parameter wait_st     =4'b1011; //wait_some time
-reg seq,next_seq;
+reg[2:0] seq,next_seq;
 wire[5:0] state_r = tb.DUT.init_o&tb.DUT.sd_read.read_seq ? tb.DUT.sd_read.state :
                     tb.DUT.sd_initial.state;
 reg[7:0]  cnt,next_cnt;
@@ -94,6 +94,14 @@ reg[7:0]  cnt,next_cnt;
                     next_state  = send_cmd0_r;
                     next_tx_cnt = 48;
                     next_data   = `DATA_R1_CMD17;
+                    next_cmp    = state_r;
+                    next_SD_OUT = 1;                  
+                    next_seq    = 2;
+                end
+                else if(tb.DUT.init_o&tb.DUT.sd_read.read_seq&state_r==tb.DUT.sd_read.dummy)begin
+                    next_state  = send_cmd0_r;
+                    next_tx_cnt = 48;
+                    next_data   = {8'hfe,8'h00};
                     next_cmp    = state_r;
                     next_SD_OUT = 1;                  
                     next_seq    = 2;

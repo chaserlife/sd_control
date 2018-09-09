@@ -16,8 +16,9 @@ parameter write_dummy = 4;
 parameter write_done  = 5;
 reg[5:0]          state,next_state;
 reg[10:0]         tx_cnt,next_tx_cnt;
-reg[512+8+16-1:0] data,next_data;
+reg[48:0]         data,next_data;
 reg[10:0]         cnt,next_cnt;
+reg[9:0]          s_cnt,next_s_cnt;
 reg               SD_CS,next_SD_CS;
 reg[47:0]         rx;
 reg[7:0]          rx_cnt;
@@ -34,6 +35,7 @@ always@(negedge SD_CK or negedge rst_n)begin
         SD_DATAIN <= 1'b1;
         tx_cnt    <= 0;
         cnt       <= 0;
+        s_cnt     <= 0;
         data      <= 0;
         write_ok  <= 0;
     end
@@ -45,8 +47,10 @@ always@(negedge SD_CK or negedge rst_n)begin
         cnt       <= next_cnt;
         data      <= next_data;
         write_ok  <= next_write_ok;
+        s_cnt     <= next_s_cnt;
     end
 end
+reg KKK;
 always@(*)begin
     next_state     = state;
     next_SD_CS     = SD_CS;
@@ -55,6 +59,9 @@ always@(*)begin
     next_cnt       = cnt-|cnt;
     next_data      = data;
     next_write_ok  = write_ok;
+    //next_s_cnt     = s_cnt - KKK;
+    //KKK            = (|s_cnt)&(tx_cnt==1);
+    next_s_cnt     = s_cnt - ((|s_cnt)&(tx_cnt==1));
     case(state)
         idle:begin
             next_SD_CS     = 1'b1;
@@ -73,29 +80,34 @@ always@(*)begin
                 next_SD_CS     = 1'b0;
                 next_SD_DATAIN = data[tx_cnt-1];
                 next_state     = write_cmd;
+                next_cnt       = 2047;
             end
-            else if(rx_valid&rx[47:40]==8'h0)begin
-                next_state     = wait_8clk;
-                next_cnt       = 8;
-                next_SD_DATAIN = 1'b1;
-                next_SD_CS     = 1'b1;
+            else if(|cnt)begin
+                if(rx[47:40]==8'h0)begin
+                    next_state     = write_data;
+                    next_tx_cnt    = 8;
+                    next_s_cnt     = 1+512+2;//8'hfe+512byte+2byte crc
+                    next_data      = 8'hfe;
+                    next_SD_DATAIN = 1'b1;
+                    next_SD_CS     = 1'b1;
+                end
             end
-        end
-        wait_8clk:begin
-            if(~|cnt)begin
-                next_state  = write_data;
-                next_data   = {8'hfe,512'b0,16'hff_ff};
-                next_tx_cnt = 8+512+16;
+            else begin
+                next_state = idle;
             end
         end
         write_data:begin
-            if(|tx_cnt)begin
+            if((|tx_cnt)|(|s_cnt))begin
+                if(tx_cnt==1)begin
+                    next_data   = s_cnt==3|s_cnt==2 ? 8'hff : s_cnt;
+                    next_tx_cnt = s_cnt==1 ? 0 : 8;
+                end
                 next_SD_CS     = 1'b0;
                 next_SD_DATAIN = data[tx_cnt-1];
             end
             else begin
                 next_state     = write_dummy;
-                next_cnt       = 1024;
+                next_cnt       = 8;
                 next_SD_CS     = 1'b0;
                 next_SD_DATAIN = 1'b1;
             end
